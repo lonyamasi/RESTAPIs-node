@@ -1,4 +1,12 @@
 const user = require("../db/models/user");
+const jwt = require('jsonwebtoken'); //import the json web token
+
+const generateToken = (payload) => { //generates a jwt token, payload is the users data inside the token
+    return jwt.sign(payload,process.env.JWT_SECRET_KEY,{ //a key used to verify the token,currently in the .env file
+        expiresIn:process.env.JWT_EXPIRES_IN //sets expiry time for token, also in the .env file
+    });
+
+};
 
 
 const signup = async (req, res,next) => {
@@ -21,7 +29,21 @@ const signup = async (req, res,next) => {
 
     });
 
-    if(!newUser){ //if the user is not a new user
+
+    //to prevent exposure of user data
+    const result = newUser.toJSON() // The newuser-a sequelize object, converted to a js object
+
+    delete result.password;
+    delete result.deletedAt; // deleting this two coz the user doesnt need to see them
+    
+    result.token= generateToken({ //results.token adds the token to the users javascript object
+        id:result.id //creates a JWT coontaining users id
+
+    });
+
+
+
+    if(!result){ //if the user is not a new user
         return res.status(400).json({
             status:"fail",
             message: "Failed to create the user"
@@ -30,7 +52,7 @@ const signup = async (req, res,next) => {
     }
     return  res.status(201).json({ //if a user is created successfuly
         status:"success",
-        data:newUser,
+        data:result,
     });
 
 
