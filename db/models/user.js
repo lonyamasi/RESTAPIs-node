@@ -1,5 +1,6 @@
 'use strict';
-const {Model, Sequelize} = require('sequelize');
+const {Model, DataTypes, Error} = require('sequelize');
+const bcrypt = require('bcrypt');
 const sequelize = require('../../config/database');
 
 module.exports = sequelize.define('user', {
@@ -7,33 +8,47 @@ module.exports = sequelize.define('user', {
     allowNull: false,
     autoIncrement: true,
     primaryKey: true,
-    type: Sequelize.INTEGER
+    type: DataTypes.INTEGER
   },
   userType: {
-    type: Sequelize.ENUM('0','1','2')
+    type: DataTypes.ENUM('0','1','2')
   },
   firstName: {
-    type: Sequelize.STRING
+    type: DataTypes.STRING
   },
   lastName: {
-    type: Sequelize.STRING
+    type: DataTypes.STRING
   },
   email: {
-    type: Sequelize.STRING
+    type: DataTypes.STRING
   },
   password: {
-    type: Sequelize.STRING
+    type: DataTypes.STRING
+  },
+  confirmPassword: {
+
+    type: DataTypes.VIRTUAL,
+    set(value){ //runs before saving the password to db
+      if(value === this.password){
+        const hashPassword = bcrypt.hashSync(value, 10); //using bcrypt to hash the password before saving it, 10 is the salt rounds meaning the password will be hashed with extra security
+        this.setDataValue("password", hashPassword) //replaces the plain text password with hashed version inside sequelize
+
+      }else {
+        throw new Error("Password and confirm password must be the same") //Error if password doesnt match and sequelize wll ot save the data
+      }
+    }
+
   },
   createdAt: {
     allowNull: false,
-    type: Sequelize.DATE
+    type: DataTypes.DATE
   },
   updatedAt: {
     allowNull: false,
-    type: Sequelize.DATE
+    type: DataTypes.DATE
   },
   deletedAt: {
-    type:Sequelize.DATE,
+    type:DataTypes.DATE,
 
   }
 }, {
